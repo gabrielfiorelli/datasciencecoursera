@@ -188,5 +188,82 @@ sapply(split(ny2, ny2$County.Site), nrow)
 # O escolhido para a análsie foi o County = 63, monitor = 2008
 
 # Será gerado um novo set de dados somente com os dados do monitor em questão
-pm1sub <- subset(pm1, State.Code == 36 & County.Code == 63 && Site.ID == 2008)
-pm2sub <- subset(pm2, State.Code == 36 & County.Code == 63 && Site.ID == 2008)
+pm1sub <- subset(pm1, State.Code == 36 & County.Code == 63 & Site.ID == 2008)
+pm2sub <- subset(pm2, State.Code == 36 & County.Code == 63 & Site.ID == 2008)
+
+dim(pm1sub)
+dim(pm2sub)
+
+# Agora a ideia é plotar a quantidade de pm2.5 em função do tempo.
+# Ver como foi a evolução disto ao longo do tempo.
+# A primeira coisa é tirar as datas:
+# 1999 Data
+dates1 <- as.Date(as.character(pm1sub$Date), "%Y%m%d")
+x1sub <- pm1sub$Sample.Value
+# Scatterplot com estes dados:
+plot(dates1, x1sub)
+
+
+# 2012 Data
+dates2 <- as.Date(as.character(pm2sub$Date), "%Y%m%d")
+x2sub <- pm2sub$Sample.Value
+# Scatterplot com estes dados:
+plot(dates2, x2sub)
+
+# Para fins de comparação os dados dos dois anos serão comparados no mesmo gráfico:
+par(mfrow = c(1,2), mar = c(4,4,2,1))
+plot(dates1, x1sub, pch = 20)
+abline(h = median(x1sub, na.rm=T))
+plot(dates2, x2sub, pch = 20)
+abline(h = median(x2sub, na.rm=T))
+
+# Como os dois gráficos estão com escalas diferentes.
+# A primeira impressão é de que ao longo dos anos isto aumentou.
+# Para verificar o range entre os dois conjuntos de dados:
+rng <- range(x1sub, x2sub, na.rm = T)
+
+# Refazendos os gráficos:
+par(mfrow = c(1,2), mar = c(4,4,2,1))
+plot(dates1, x1sub, pch = 20, ylim = rng)
+abline(h = median(x1sub, na.rm = TRUE))
+plot(dates2, x2sub, pch = 20, ylim = rng)
+abline(h = median(x2sub, na.rm = TRUE))
+
+# Ou seja, não só a média baixou, como também a poluição máxima.
+# Até aqui, foi possível mostrar que houve redução na poluição.
+# Mas seria interessante também olhar outros lugares.
+# Então a ideia é avaliar a evolução de cada estado.
+
+# Criaremos um gráfico que tem as médias de um estado para 1999
+# e as médias para 2012.
+
+head(pm1)
+# Temos um campo que é o State.Code
+# Então é basicamente tirar a média para cada estado para 1999
+
+mn1 <- with(pm1, tapply(Sample.Value, State.Code, mean, na.rm = TRUE))
+str(mn1)
+summary(mn1)
+
+mn2 <- with(pm2, tapply(Sample.Value, State.Code, mean, na.rm = TRUE))
+str(mn2)
+summary(mn2)
+
+# Criando os dataframes
+d1 <- data.frame(State = names(mn1), mean = mn1)
+d2 <- data.frame(State = names(mn2), mean = mn2)
+
+# Merge (JOIN) nos dois dataframes
+mrg <- merge(d1, d2, by = "State")
+
+# Agora temos uma estrutura de dados que mostra a média de cada estado
+# para cada período de tempo.
+
+par(mfrow = c(1,1))
+with(mrg, plot(rep(1999, 52), mrg[,2], xlim = c(1998, 2013), ylim = c(0,21)))
+with(mrg, points(rep(2012, 52), mrg[,3]))
+segments(rep(1999, 52), mrg[,2], rep(2012, 52), mrg[,3])
+
+
+# A grande maioria dos estados tem um diminuição nas médias.
+# Apenas alguns apresentam um crescimento médio de poluição
